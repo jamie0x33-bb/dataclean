@@ -54,3 +54,20 @@ def test_drop_empty():
         _write_csv(inp, [["a"], ["data"], [""], ["more"]])
         n = clean_csv(inp, out, drop_empty=True)
         assert n == 2
+
+
+def test_drop_empty_removes_blank_rows(tmp_path):
+    src = tmp_path / "in.csv"
+    dst = tmp_path / "out.csv"
+    src.write_text("a,b\n1,2\n,\n3,4\n")
+    written = clean_csv(str(src), str(dst), drop_empty=True)
+    assert written == 3
+    assert ",\n" not in dst.read_text()
+
+
+def test_strip_normalises_surrounding_whitespace(tmp_path):
+    src = tmp_path / "in.csv"
+    dst = tmp_path / "out.csv"
+    src.write_text("a,b\n  1  ,  2  \n")
+    clean_csv(str(src), str(dst), strip=True)
+    assert "1,2" in dst.read_text()
