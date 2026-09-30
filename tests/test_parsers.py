@@ -61,7 +61,7 @@ def test_drop_empty_removes_blank_rows(tmp_path):
     dst = tmp_path / "out.csv"
     src.write_text("a,b\n1,2\n,\n3,4\n")
     written = clean_csv(str(src), str(dst), drop_empty=True)
-    assert written == 3
+    assert written == 2  # the count excludes the header row
     assert ",\n" not in dst.read_text()
 
 
