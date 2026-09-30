@@ -1,56 +1,34 @@
 """Tests for the CSV cleaning module."""
 
-import csv
-import os
-import tempfile
-
 from dataclean.parsers import clean_csv
+from conftest import _read_csv
 
 
-def _write_csv(path, rows):
-    with open(path, "w", newline="") as f:
-        csv.writer(f).writerows(rows)
+def test_passthrough(sample_csv, output_csv):
+    n = clean_csv(sample_csv, output_csv)
+    assert n == 4
+    rows = _read_csv(output_csv)
+    assert rows[0] == ["name", "age", "city"]
 
 
-def _read_csv(path):
-    with open(path, newline="") as f:
-        return list(csv.reader(f))
+def test_dedup(sample_csv, output_csv):
+    n = clean_csv(sample_csv, output_csv, dedup=True)
+    assert n == 3
 
 
-def test_passthrough():
-    with tempfile.TemporaryDirectory() as d:
-        inp = os.path.join(d, "in.csv")
-        out = os.path.join(d, "out.csv")
-        _write_csv(inp, [["a", "b"], ["1", "2"], ["3", "4"]])
-        n = clean_csv(inp, out)
-        assert n == 2
-        assert _read_csv(out) == [["a", "b"], ["1", "2"], ["3", "4"]]
+def test_strip(sample_csv, output_csv):
+    clean_csv(sample_csv, output_csv, strip=True)
+    rows = _read_csv(output_csv)
+    assert rows[-1] == ["Carol", "35", "Los Angeles"]
 
 
-def test_dedup():
-    with tempfile.TemporaryDirectory() as d:
-        inp = os.path.join(d, "in.csv")
-        out = os.path.join(d, "out.csv")
-        _write_csv(inp, [["x"], ["1"], ["1"], ["2"]])
-        n = clean_csv(inp, out, dedup=True)
-        assert n == 2
+def test_drop_empty(sample_csv, output_csv):
+    n = clean_csv(sample_csv, output_csv, drop_empty=True)
+    assert n == 3
 
 
-def test_strip():
-    with tempfile.TemporaryDirectory() as d:
-        inp = os.path.join(d, "in.csv")
-        out = os.path.join(d, "out.csv")
-        _write_csv(inp, [["col"], ["  hello  "], [" world"]])
-        clean_csv(inp, out, strip=True)
-        rows = _read_csv(out)
-        assert rows[1] == ["hello"]
-        assert rows[2] == ["world"]
-
-
-def test_drop_empty():
-    with tempfile.TemporaryDirectory() as d:
-        inp = os.path.join(d, "in.csv")
-        out = os.path.join(d, "out.csv")
-        _write_csv(inp, [["a"], ["data"], [""], ["more"]])
-        n = clean_csv(inp, out, drop_empty=True)
-        assert n == 2
+def test_combined(sample_csv, output_csv):
+    n = clean_csv(sample_csv, output_csv, dedup=True, strip=True, drop_empty=True)
+    assert n == 3
+    rows = _read_csv(output_csv)
+    assert len(rows) == 4  # header + 3 data rows
